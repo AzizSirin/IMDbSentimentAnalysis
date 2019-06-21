@@ -31,7 +31,7 @@ def fetch_from_database(score):
 
     conn = create_connection('2019-06.db')
     c = conn.cursor()
-    data = c.execute("""SELECT * FROM movie_reviews WHERE review_score=? LIMIT 20""", (score,))
+    data = c.execute("""SELECT * FROM movie_reviews WHERE review_score=? LIMIT 3000""", (score,))
 
     score = str(score)
     connection_of_new_database = create_database(score)
