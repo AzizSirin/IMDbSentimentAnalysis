@@ -17,7 +17,7 @@ def create_database(name):  # Creating database when needed..
 def create_connection(db_file):  # We need to create connection with the database where reviews and scores are stored
 
     try:
-        conn = sqlite3.connect(db_file)
+        conn = sqlite3.connect('{}.db'.format(db_file))
         return conn
 
     except Error as e:
@@ -30,7 +30,7 @@ def fetch_from_database(score):  # Function where you can fetch desired review s
     count = 0
     score = int(score)
 
-    conn = create_connection('2019-06.db')
+    conn = create_connection('2019-06')
     c = conn.cursor()
     data = c.execute("""SELECT * FROM movie_reviews WHERE review_score=? LIMIT 3200""", (score,))
 
