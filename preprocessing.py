@@ -7,7 +7,7 @@ from data_preparing import create_connection
 import re
 
 REPLACE_NO_SPACE = re.compile("[.;:!\'?,\"(\-_)\[\]]")
-
+LONG_WORDS = re.compile(r'\W*\b\w{40,999}\b')
 
 def filling_the_database(review_data):
     try:
@@ -23,7 +23,8 @@ def cleaner(review_data):
 
     for each in review_data:
         cleaned_review = [REPLACE_NO_SPACE.sub("", each[0].lower())]
-        review_and_score = [cleaned_review[0], each[1]]
+        cleaned_review = LONG_WORDS.sub("", cleaned_review[0])
+        review_and_score = [cleaned_review, each[1]]
         filling_the_database(review_and_score)
 
 def main(path):
