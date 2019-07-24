@@ -8,7 +8,7 @@ start_time = time.time()
 
 def create_database(name):  # Creating database when needed..
 
-    connection = sqlite3.connect('{}.db'.format(name), timeout=10000)
+    connection = sqlite3.connect('{}.db'.format(name), timeout=1000)
     c = connection.cursor()
     c.execute("""CREATE TABLE IF NOT EXISTS movie_reviews (review TEXT, review_score INTEGER)""")
     return connection
@@ -17,7 +17,7 @@ def create_database(name):  # Creating database when needed..
 def create_connection(db_file):  # We need to create connection with the database where reviews and scores are stored
 
     try:
-        conn = sqlite3.connect('{}.db'.format(db_file))
+        conn = sqlite3.connect('{}.db'.format(db_file), timeout=1000)
         return conn
 
     except Error as e:
