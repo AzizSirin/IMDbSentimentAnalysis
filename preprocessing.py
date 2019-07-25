@@ -9,7 +9,7 @@ from data_preparing import create_database
 from data_preparing import create_connection
 import re
 
-REPLACE_NO_SPACE = re.compile("[.;:!\'*?,\"(\-_)\[\]/]")
+REPLACE_NO_SPACE = re.compile("[.;:!\'<>£?,\"^+@#$½{}~´`%&/=_*(\-)\[\]]")
 LONG_WORDS = re.compile(r'\W*\b\w{40,999}\b')
 
 
@@ -49,7 +49,7 @@ def main(path):
 
     conn = create_connection(path)
     c = conn.cursor()
-    data = c.execute("""SELECT * FROM movie_reviews LIMIT 3000""")
+    data = c.execute("""SELECT * FROM movie_reviews LIMIT 3001""")
 
     for each in data:
         cleaner(data)
