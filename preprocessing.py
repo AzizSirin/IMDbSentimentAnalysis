@@ -1,6 +1,7 @@
 import sqlite3
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
 from sqlite3 import Error
 from multiprocessing import Pool
@@ -11,7 +12,7 @@ import re
 
 REPLACE_NO_SPACE = re.compile("[.;:!\'<>£?,\"^+@#$½{}~´`%&/=_*(\-)\[\]]")
 LONG_WORDS = re.compile(r'\W*\b\w{40,999}\b')
-
+start_time = time.time()
 
 def filling_the_database(review_data):  #  Appending the cleaned reviews to same database
     try:
@@ -26,6 +27,7 @@ def filling_the_database(review_data):  #  Appending the cleaned reviews to same
 def cleaner(review_data): # Cleaning the reviews
     counter = 0
     lemmatizer = WordNetLemmatizer()
+    stemmer = PorterStemmer()
     for each in review_data:
         cleaned_review = [REPLACE_NO_SPACE.sub(" ", each[0].lower())] # Turning capital letters to lower letter
         cleaned_review = LONG_WORDS.sub("", cleaned_review[0]) # Removing punctuations
@@ -35,14 +37,16 @@ def cleaner(review_data): # Cleaning the reviews
         cleaned_review = word_tokenize(cleaned_review)
         stemmed_review = []
         for word in cleaned_review:
-            stemmed_review.append(lemmatizer.lemmatize(word)) # Lemmatization
+            word = lemmatizer.lemmatize(word) # Stemming
+            stemmed_review.append(stemmer.stem(word)) # Lemmatization
         cleaned_review = ' '.join(stemmed_review)
         review_and_score = [cleaned_review, each[1]]
         filling_the_database(review_and_score)
 
         counter += 1
         if counter%25 == 0:
-            print("%s. review of score %s have been cleaned." % (counter, each[1]))
+            print("%s reviews of score %s have been cleaned." % (counter, each[1]))
+
 
 
 def main(path):
@@ -60,3 +64,4 @@ if __name__ == "__main__":
     c.close()
     p = Pool(10)
     p.map(main, scores)
+    print("--- %s seconds ---" % (time.time() - start_time))
