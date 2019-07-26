@@ -38,5 +38,6 @@ def fetch():
     connection.close()
 
 if __name__ == "__main__":
+
     fetch()
     print("--- %s seconds ---" % (time.time() - start_time))
