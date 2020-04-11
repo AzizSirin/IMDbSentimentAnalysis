@@ -4,8 +4,8 @@ from requests import get
 from bs4 import BeautifulSoup
 import sqlite3
 
-time_frame = '2019-06'
-connection = sqlite3.connect('{}.db'.format(time_frame), timeout=1000)
+time_frame = '2020-04-11'
+connection = sqlite3.connect('{}.db'.format(time_frame), timeout=10000)
 c = connection.cursor()
 
 
@@ -15,48 +15,47 @@ def create_table():  # Creating the database to store reviews and scores
     (review TEXT, review_score INTEGER)""")
 
 
-def movie_scraper(toppath, bottompath):  # Getting the movies from top and bottom list of IMDb
+def movie_link_scraper(path):  # Getting the movies from IMDb list.
 
-    # You need to configure here if you want to scrape movies from other lists
+    # You need to configure here if you want to scrape movies from other lists, it should get title path.
 
-    top_links = []
-    bottom_links = []
+    movie_list = []
 
-    top_list = get(toppath)
-    bottom_list = get(bottompath)
+    page_count = 1
 
-    soup_top = BeautifulSoup(top_list.text, 'html.parser')
-    soup_bottom = BeautifulSoup(bottom_list.text, 'html.parser')
+    length = 5000
 
-    for each in soup_top.findAll('td', class_='titleColumn'):
-        each = each.find('a')['href']
-        top_links.append(each)
+    movie_count = 0
 
-    for each in soup_bottom.findAll('td', class_='titleColumn'):
-        each = each.find('a')['href']
-        bottom_links.append(each)
+    while page_count < 50:
 
-    scraping_it(top_links,bottom_links)
+        link = path + '?page=' + str(page_count)
+        time.sleep(4)
+        page = get(link)
 
+        page_soup = BeautifulSoup(page.text, 'html.parser')
 
-def scraping_it(top_links, bottom_links):  # Scraping the reviews and scores of each movie
-    create_table()
+        printProgressBar(0, length, prefix='Progress:', suffix='Complete', length=50)
 
-    p = Pool(25)
-    p.map(review_and_score_scraper, top_links)
+        for each in page_soup.findAll('h3', class_='lister-item-header'):
+            movie_count += 1
+            each = each.find('a')['href']
+            movie_list.append(each)
+            printProgressBar(movie_count + 1, length, prefix='Progress:', suffix='Complete', length=50)
+        page_count += 1
 
-    time.sleep(30)
-
-    b = Pool(25)
-    b.map(review_and_score_scraper, bottom_links)
-
-    c.close()
+    print(movie_count, 'movies listed.')
+    time.sleep(5)
+    return movie_list
 
 
 def review_and_score_scraper(each):
 
     review_id = 0
     print(each)
+
+    review_data = ()
+    bulk_data = []
 
     movie_link = get('https://www.imdb.com' + each + 'reviews?ref_=tt_urv')
     soup_link = BeautifulSoup(movie_link.text, 'html.parser')
@@ -71,13 +70,13 @@ def review_and_score_scraper(each):
             review_score = review.find('span', class_='').text  # Scraping the score
             review_score = int(review_score)
 
-            # Appending them to database
-            c.execute("""INSERT INTO movie_reviews VALUES (?, ?)""", (review_text, review_score))
-            connection.commit()
+            review_data = (review_text, review_score)
+            bulk_data.append(review_data)
+            del review_data
 
             review_id += 1
             if (review_id % 1000) == 0:
-                print(review_id)
+                print(review_id, 'reviews of', each, 'have been fetched...')
                 time.sleep(5)
 
     if soup_link.find('div', class_='load-more-data') is not None:  # If there are more review page, we're getting the key of next page
@@ -86,7 +85,6 @@ def review_and_score_scraper(each):
 
         while key is not None:  # And if there are more reviews, scraping them here...
 
-            print(key)
 
             next_page = get('https://www.imdb.com' + each + 'reviews/_ajax?ref_=undefined&paginationKey=' + key)
             next_page_soup = BeautifulSoup(next_page.text, 'html.parser')
@@ -101,11 +99,13 @@ def review_and_score_scraper(each):
                     review_score = next_page_review.find('span', class_='').text
                     review_score = int(review_score)
 
-                    c.execute("""INSERT INTO movie_reviews VALUES (?, ?)""", (review_text, review_score))
-                    connection.commit()
+                    review_data = (review_text, review_score)
+                    bulk_data.append(review_data)
+                    del review_data
+
                     review_id += 1
                     if (review_id % 1000) == 0:
-                        print(review_id)
+                        print(review_id, 'reviews of', each, 'have been fetched...')
                         time.sleep(5)
 
             try:  # In the end of every page we need to check if there is more. So we can keep continue...
@@ -116,8 +116,41 @@ def review_and_score_scraper(each):
     else:
         key = None
 
+    print('Total of', review_id, 'reviews of', each, 'have been fetched...')
+
+    # Appending them to database
+    c.executemany("""INSERT INTO movie_reviews VALUES (?, ?)""", bulk_data)
+    connection.commit()
+
+
+def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end=printEnd)
+    # Print New Line on Complete
+    if iteration == total:
+        print()
+
 
 if __name__ == "__main__":
 
-    scrape = movie_scraper('https://www.imdb.com/chart/top?ref_=nv_mv_250', 'https://www.imdb.com/chart/bottom')
-    c.close()
+    movie_list = movie_link_scraper('https://www.imdb.com/list/ls057823854/')
+
+    create_table()
+    p = Pool(25)
+    p.map(review_and_score_scraper, movie_list)
+    p.terminate()
+
