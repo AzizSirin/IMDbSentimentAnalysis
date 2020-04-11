@@ -14,7 +14,8 @@ REPLACE_NO_SPACE = re.compile("[.;:!\'<>£?,\"^+@#$½{}~´`%&/=_*(\-)\[\]]")
 LONG_WORDS = re.compile(r'\W*\b\w{40,999}\b')
 start_time = time.time()
 
-def filling_the_database(review_data):  #  Appending the cleaned reviews to same database
+
+def filling_the_database(review_data):  # Appending the cleaned reviews to same database
     try:
         conn = create_connection('preprocessed_data')
         c = conn.cursor()
@@ -57,6 +58,7 @@ def main(path):
 
     for each in data:
         cleaner(data)
+
 
 if __name__ == "__main__":
     scores = [1,2,3,4,5,6,7,8,9,10]
